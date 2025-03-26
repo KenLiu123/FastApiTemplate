@@ -3,6 +3,7 @@ from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 import logging
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.exc import SQLAlchemyError
 
 # 创建基础模型  
 Base = declarative_base()
@@ -10,12 +11,12 @@ Base = declarative_base()
 
 
 # 创建异步数据库连接
-engine = create_async_engine(DATABASE_URL, 
+engine = create_async_engine(settings.DATABASE_URL, 
         echo=True,
-        pool_size=DATABASE_POOL_SIZE,
-        max_overflow=10,
-        pool_timeout=30,
-        pool_pre_ping=True
+        pool_size=settings.DATABASE_POOL_SIZE,          
+        max_overflow=settings.DATABASE_MAX_OVERFLOW,
+        pool_timeout=settings.DATABASE_POOL_TIMEOUT,
+        pool_pre_ping=settings.DATABASE_POOL_PRE_PING
         )
 AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 

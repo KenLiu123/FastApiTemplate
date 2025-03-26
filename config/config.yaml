@@ -1,6 +1,9 @@
 database:
   url: "mysql+aiomysql://root:password@localhost:3306/mydb"
   pool_size: 10
+  max_overflow: 10
+  pool_timeout: 30
+  pool_pre_ping: true
 
 security:
   secret_key: "your-secret-key"

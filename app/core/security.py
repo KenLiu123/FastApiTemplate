@@ -2,7 +2,7 @@ import jwt
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from typing import Optional
-import app.core.config as config
+from app.core.config import settings
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from app.db.user import get_user
@@ -20,9 +20,9 @@ from functools import wraps
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # 密钥（可以从环境变量中获取，但为了简单在此硬编码）
-SECRET_KEY = config.SECRET_KEY
-ALGORITHM = config.ALGORITHM
-ACCESS_TOKEN_EXPIRE_MINUTES = config.ACCESS_TOKEN_EXPIRE_MINUTES
+SECRET_KEY = settings.SECRET_KEY
+ALGORITHM = settings.ALGORITHM
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
 # 用于生成和验证 JWT 的函数
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
@@ -75,7 +75,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     return pwd_context.verify(plain_password, hashed_password)
 
-def authenticate_user(username: str, password: str, db: AsyncSession) -> Optional[User]:
+async def authenticate_user(username: str, password: str, db: AsyncSession) -> Optional[User]:
     """
     验证用户名和密码是否匹配。
     :param username: 用户名
@@ -91,7 +91,7 @@ def authenticate_user(username: str, password: str, db: AsyncSession) -> Optiona
         return False
     return user
 
-def get_current_user(db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme)):
+async def get_current_user(token: str, db: AsyncSession = Depends(get_db)):
     """
     获取当前用户。
     :param db: 数据库会话
