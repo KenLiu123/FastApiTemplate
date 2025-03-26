@@ -1,0 +1,16 @@
+database:
+  url: "mysql+aiomysql://root:password@localhost:3306/mydb"
+  pool_size: 10
+
+security:
+  secret_key: "your-secret-key"
+  algorithm: "HS256"
+  access_token_expire_minutes: 30
+
+logging:
+  level: "INFO"
+  file: "logs/app.log"
+
+
+
+
