@@ -1,5 +1,5 @@
 database:
-  url: "mysql+aiomysql://root:password@localhost:3306/mydb"
+  url: "mysql+aiomysql://root:Aa123456@localhost:3306/rbac_system"
   pool_size: 10
   max_overflow: 10
   pool_timeout: 30

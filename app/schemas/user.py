@@ -3,10 +3,14 @@ from typing import Optional
 
 class UserBase(BaseModel):
     username: str
-    email: str
+
 
 class UserCreate(UserBase):
     password: str  # 用于注册时传入的密码字段
+    email: str
+
+class UserLogin(UserBase):
+    password: str
 
 class UserResponse(UserBase):
     id: int

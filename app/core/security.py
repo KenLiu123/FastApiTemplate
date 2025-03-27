@@ -5,16 +5,21 @@ from typing import Optional
 from app.core.config import settings
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
-from app.db.user import get_user
 from app.schemas.user import TokenData
 from app.core.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.models.db_user import User
 from functools import wraps
+from fastapi import status
 
+credentials_exception = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Could not validate credentials",
+    headers={"WWW-Authenticate": "Bearer"},
+)
 
-
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 # 用于密码哈希的上下文（bcrypt）
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -87,11 +92,11 @@ async def authenticate_user(username: str, password: str, db: AsyncSession) -> O
     user = user.scalar_one_or_none()
     if not user:
         return False
-    if not verify_password(password, user.hashed_password):
+    if not verify_password(password, user.password):
         return False
     return user
 
-async def get_current_user(token: str, db: AsyncSession = Depends(get_db)):
+async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
     """
     获取当前用户。
     :param db: 数据库会话
@@ -107,7 +112,8 @@ async def get_current_user(token: str, db: AsyncSession = Depends(get_db)):
     except Exception as e:
         raise credentials_exception 
     
-    user = await get_user(db, token_data.username)
+    user = await db.execute(select(User).where(User.username == token_data.username))
+    user = user.scalar_one_or_none()
     if user is None:
         raise credentials_exception
     return user 
