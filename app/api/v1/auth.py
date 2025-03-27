@@ -5,11 +5,12 @@ from app.core.security import authenticate_user, create_access_token,verify_acce
 from app.core.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
-from app.db.user import get_user_by_email, create_user
+from app.db.user import get_user_by_email, create_user, get_all_users as get_all_users_db, get_total_users
 from fastapi import FastAPI
 from app.schemas.user import UserCreate, UserLogin
 from fastapi import Depends
 from app.models.db_user import User as db_user
+from app.db.role import require_permission
 app = APIRouter()
 
 
@@ -45,6 +46,21 @@ async def logout(current_user: Annotated[db_user, Depends(get_current_user)]):
         return ResponseModel(status_code=401, status="error", message="Unauthorized")
     
 
-
+@app.get("/users/getallusers", response_model=ResponseModel)
+@require_permission("manage_users")
+async def get_all_users(page: int, page_size: int, user: db_user = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    users = await get_all_users_db(db, page=page, page_size=page_size)
+    total = await get_total_users(db)
+    json_users = []
+    for user in users:
+        json_users.append({
+            "username": user.username,
+            "email": user.email,
+            "telephone": user.telephone,
+            "avatar": user.avatar,
+            "created_at": user.created_at,
+            "is_active": user.is_active
+        })
+    return ResponseModel(status_code=200, status="success", message="Users fetched successfully", data={"users": json_users, "total": total})
 
 

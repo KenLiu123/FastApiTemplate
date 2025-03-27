@@ -9,9 +9,10 @@ from app.schemas.user import TokenData
 from app.core.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from app.models.db_user import User
+from app.models.db_user import User, User_Roles, Role_Permissions, Permissions, Roles
 from functools import wraps
 from fastapi import status
+from app.core.database import AsyncSessionLocal
 
 credentials_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -118,27 +119,67 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
         raise credentials_exception
     return user 
 
+# 获取角色
+async def get_role(db: AsyncSession, role_name: str) -> Optional[Roles]:
+    result = await db.execute(select(Roles).filter(Roles.role_name == role_name))
+    result = result.scalars()
+    if result:
+        return result.first()
+    return None 
+
+# 获取权限  
+async def get_permission(db: AsyncSession, permission_name: str) -> Optional[Permissions]:
+    result = await db.execute(select(Permissions).filter(Permissions.permission_name == permission_name))
+    result = result.scalars()
+    if result:
+        return result.first()
+    return None
+
+# 获取用户角色
+async def get_user_roles(db: AsyncSession, user_name: str) -> list[User_Roles]:
+    result = await db.execute(select(User_Roles).filter(User_Roles.user_username == user_name))
+    result = result.scalars()
+    return list(result) 
+
+# 获取角色权限
+async def get_role_permissions(db: AsyncSession, role_name: str) -> list[Role_Permissions]:
+    result = await db.execute(select(Role_Permissions).filter(Role_Permissions.role_name == role_name))
+    result = result.scalars()
+    return list(result) 
+
+# 获取用户权限
+async def get_user_permissions(db: AsyncSession, user_name: str) -> list[Permissions]:
+    user_roles = await get_user_roles(db, user_name)
+    if not user_roles:
+        raise HTTPException(status_code=404, detail="用户没有角色")
+    role_permissions = await get_role_permissions(db, user_roles)
+    if not role_permissions:
+        raise HTTPException(status_code=404, detail="用户没有权限")
+    permissions = []
+    for role_permission in role_permissions:
+        result = await db.execute(select(Permissions).filter(Permissions.permission_id == role_permission.permission_id))
+        result = result.scalars()
+        permissions.extend(list(result))
+    return permissions
 
 
 def require_permission(permission_name: str):
     """装饰器：检查用户是否具有某个权限"""
     def decorator(func):
         @wraps(func)
-        async def wrapper(token: str = Depends(get_current_user), *args, **kwargs):
-            async with AsyncSessionLocal() as session:
-                result = await session.execute(select(User).filter(User.id == token.id))
-                user = result.scalars().first()
+        async def wrapper(user, db,  *args, **kwargs):
+            result = await db.execute(select(User).filter(User.username == user.username))
+            user = result.scalars().first()
 
-                if not user:
-                    raise HTTPException(status_code=403, detail="无权限")
-                user_permissions = set()
-                for role in user.roles:
-                    for perm in role.permissions:
-                        user_permissions.add(perm.name)
-                
-                if permission_name not in user_permissions:
-                    raise HTTPException(status_code=403, detail="无权限")
+            if not user:
+                raise HTTPException(status_code=403, detail="无权限")
+            
+            user_permissions = await get_user_permissions(db, user.username)  # 用户拥有的权限集合
+            
+            if permission_name not in user_permissions:
+                raise HTTPException(status_code=403, detail="无权限")
 
-                return await func(*args, user=user, **kwargs)
+            return await func(user=user, db=db,*args, **kwargs)
         return wrapper
     return decorator
+

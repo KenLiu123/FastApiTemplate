@@ -17,6 +17,9 @@ TABLES = {
         username VARCHAR(50) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
         email VARCHAR(100) NOT NULL UNIQUE,
+        telephone VARCHAR(11) NOT NULL,
+        avatar VARCHAR(255),
+        is_active BOOLEAN DEFAULT TRUE, 
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     """,
@@ -77,8 +80,8 @@ try:
     # 预置角色（避免重复插入）
     roles = [
         ("Admin", "系统管理员，可以管理所有数据"),
-        ("User", "普通用户，可以访问基本功能"),
-        ("Editor", "内容编辑人员，可修改文章")
+        ("Manager", "领导， 负责团队管理、审批流程，可能拥有一定的管理权限，但低于管理员。"),
+        ("User", "只能访问自身权限范围内的功能，如查看和编辑个人信息。")
     ]
     cursor.executemany("INSERT IGNORE INTO Roles (role_name, description) VALUES (%s, %s);", roles)
 

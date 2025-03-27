@@ -12,6 +12,7 @@ class UserCreate(UserBase):
 class UserLogin(UserBase):
     password: str
 
+
 class UserResponse(UserBase):
     id: int
 
