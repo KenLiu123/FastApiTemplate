@@ -56,6 +56,18 @@ TABLES = {
         FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
         FOREIGN KEY (role_id) REFERENCES Roles(role_id) ON DELETE CASCADE
     );
+    """,
+    'Posts':"""
+        CREATE TABLE Posts (
+        post_id INT PRIMARY KEY AUTO_INCREMENT,  -- 帖子唯一 ID
+        user_id INT NOT NULL,                    -- 发布用户 ID
+        content TEXT,                             -- 文字内容
+        link VARCHAR(500),                        -- 文章或外部链接
+        image_url VARCHAR(1000),                  -- 图片地址（可存多张，用逗号分隔）
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 发布时间
+        expires_at DATETIME DEFAULT (CURRENT_TIMESTAMP + INTERVAL 1 DAY), -- 失效时间（自动+24h）
+        FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE -- 关联用户表
+    );
     """
 }
 

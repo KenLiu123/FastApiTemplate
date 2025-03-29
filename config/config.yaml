@@ -8,12 +8,8 @@ database:
 security:
   secret_key: "your-secret-key"
   algorithm: "HS256"
-  access_token_expire_minutes: 30
+  access_token_expire_minutes: 720
 
 logging:
   level: "INFO"
   file: "logs/app.log"
-
-
-
-
